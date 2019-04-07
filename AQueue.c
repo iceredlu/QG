@@ -122,25 +122,31 @@ void ClearAQueue(AQueue *Q) //清空队列
 
 Status TraverseAQueue(const AQueue *Q, void (*foo)(void *q))    //遍历函数操作
 {
-    if(Q->length==0)return 0;
+    if(Q->length==0)return FALSE;
 
     int i = Q->front;
     while(i != Q->rear)
     {
         (*foo)(Q->data[i]);
+        static itype = Q->type[i];
         i = (i+1) % MAXQUEUE;
     }
     return TRUE;
 }
 
-void foo(void *q)
-{
-    ;
-}
-
 void APrint(void *q)    //操作函数
 {
-    ;
+    switch(itype)
+    {
+        case 'I' : 
+            printf("%d",*(int *)p);break;
+        case 'F' :
+            printf("%f",*(float*)p);break;
+        case 'C':
+        csae 'S':
+            printf("%s",(char*)p);break;
+    
+    }
 }
 
 char GetType()
