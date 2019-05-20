@@ -2,12 +2,11 @@ import pandas as pd
 import time
 import numpy as np
 from operator import itemgetter
-import csv
 
 class ItemBaseCf():
     #初始化参数
     def __init__(self):
-        print('itembaseCF start..')
+        self.filename = r'D:\QG\最终考核\movieRecSys\src\testRatings.csv'
         #为目标用户找到50部相似电影，推荐20部相似电影
         self.n_sim_movie = 50
         self.n_rec_movie = 20
@@ -23,11 +22,11 @@ class ItemBaseCf():
         self.movie_count = 0
 
     #划分训练集和测试集，得到用户-电影矩阵
-    def get_dataSet(self,filename,pivot=0.9):
+    def get_dataSet(self,pivot=0.9):
         print('getting dataSet..')
         train_len = 0
         test_len = 0
-        df = pd.read_csv(filename,usecols=(0,1,2)) #从文件中读取数据
+        df = pd.read_csv(self.filename,usecols=(0,1,2)) #从文件中读取数据
         dataSet = df.values
         for line in dataSet:
             user,movie,rating = line
@@ -57,12 +56,7 @@ class ItemBaseCf():
         #统计电影同时出现的次数
         print('building co-rated user matrix...')
         start_time = time.time()
-        step = 0
         for user,movies in self.trainSet.items():#遍历用户
-            _time = time.time()
-            step += 1
-            if (step % 20000 == 0):
-                print('step(%d),%f seconds have spent..' % (step, _time - start_time))
             for m1 in movies: #遍历电影
                 for m2 in movies: #遍历当前电影相关电影
                     if m1 == m2:
@@ -86,6 +80,8 @@ class ItemBaseCf():
 
     #为目标用户找推荐n部相似电影
     def recommed(self,user):
+        self.get_dataSet()
+        self.cal_mov_sim()
         n = self.n_rec_movie
         k = self.n_sim_movie
         rank = {}
@@ -96,7 +92,8 @@ class ItemBaseCf():
                     continue
                 rank.setdefault(related_movie,0)
                 rank[related_movie] += w * float(rating)
-        return sorted(rank.items(),key=itemgetter(1),reverse=True)[:n]
+        recmov = sorted(rank.items(),key=itemgetter(1),reverse=True)[:n]
+        return recmov
 
     #产生推荐并通过准确率，召回率和覆盖率进行评估
     def evaluate(self):
@@ -124,16 +121,14 @@ class ItemBaseCf():
         print('precision=%.4f\trecall=%.4f\tcoverage=%.4f' % (precision,recall,coverage))
 
     def savt_sim_movie(self):
-        with open('sim_movie.csv','w') as csvfile:
-            csvwriter = csv.writer(csvfile)
-            for k,v in itemCF.movie_sim_matrix.items():
-                csvwriter.writerow([k,v])
-            csvfile.close()
+        self.movie_sim_matrix = pd.DataFrame(self.movie_sim_matrix)
+        self.movie_sim_matrix = self.movie_sim_matrix.fillna(0)
+        self.movie_sim_matrix.to_csv('sim_movid.csv',index_label='movid')
 
 if __name__ == '__main__':
     itemCF = ItemBaseCf()
-    filename = 'ratings.csv'
-    itemCF.get_dataSet(filename)
-    itemCF.cal_mov_sim()
+    #itemCF.get_dataSet(filename)
+    #itemCF.cal_mov_sim()
+    #itemCF.evaluate()
     #itemCF.savt_sim_movie()
-    itemCF.evaluate()
+    #itemCF.recommed(9)

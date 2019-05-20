@@ -105,3 +105,9 @@ class logIn(QWidget):
     def mouseReleaseEvent(self, QMouseEvent):
         self.m_flag = False
         self.setCursor(QCursor(Qt.ArrowCursor))
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    ui = logIn()
+    ui.show()
+    sys.exit(app.exec_())

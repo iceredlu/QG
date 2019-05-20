@@ -3,12 +3,11 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from sql import ConnetSQL
-from detailsPage import movDetails
-
 
 class signIn(QWidget):
     def __init__(self):
         super().__init__()
+        self.sql = ConnetSQL()
         self.initUI()
 
     def initUI(self):
@@ -28,10 +27,21 @@ class signIn(QWidget):
         self.pwd_line = QLineEdit(self)
         self.pwd2_line = QLineEdit(self)
         self.signin_bt = QPushButton('注册', self)
+        self.signin_bt.setEnabled(False)
 
         self.user_line.setPlaceholderText('输入账号')  # 完善文本框
         self.pwd_line.setPlaceholderText('输入密码')
         self.pwd2_line.setPlaceholderText('再次输入密码')
+
+        self.pwd_line.setEchoMode(QLineEdit.Password)
+        self.pwd2_line.setEchoMode(QLineEdit.Password)
+
+        self.typeLabel = QLabel(self)
+        self.typeLabel.setText("<font color=%s>%s</font>" % ('#ffffff','选择喜欢的类型'))
+        genres = ['剧情', '喜剧', '动作', '爱情', '科幻', '动画', '悬疑', '惊悚', '恐怖', '音乐', '传记', '奇幻', '冒险', '武侠']
+        self.type = '剧情'
+        self.type_cb = QComboBox()
+        self.type_cb.addItems(genres)
 
     def initLayout(self):
         self.back_bt.setGeometry(20, 20, 50, 25)
@@ -43,6 +53,10 @@ class signIn(QWidget):
         layout.addWidget(self.pwd_line)
         layout.addStretch(1)
         layout.addWidget(self.pwd2_line)
+        layout.addStretch(2)
+        layout.addWidget(self.typeLabel)
+        layout.addStretch(1)
+        layout.addWidget(self.type_cb)
         layout.addStretch(2)
         layout.addWidget(self.signin_bt)
         layout.addStretch(6)
@@ -56,6 +70,41 @@ class signIn(QWidget):
 
     def initConsum(self):
         self.back_bt.clicked.connect(self.close)
+        self.signin_bt.clicked.connect(self.signIn)
+
+        #检查输入
+        self.user_line.textChanged.connect(self.check_input)
+        self.pwd_line.textChanged.connect(self.check_input)
+        self.pwd2_line.textChanged.connect(self.check_input)
+
+        self.type_cb.currentTextChanged.connect(self.changeType)
+
+    #改变喜欢类型
+    def changeType(self):
+        self.type = self.type_cb.currentText()
+
+    def check_input(self):
+        if self.user_line.text() and self.pwd_line.text() and self.pwd2_line.text():
+            self.signin_bt.setEnabled(True)
+        else:
+            self.signin_bt.setEnabled(False)
+
+    def signIn(self):
+        id = self.user_line.text()
+        pwd_1 = self.pwd_line.text()
+        pwd_2 = self.pwd2_line.text()
+        if self.sql.isExistUserID(id):
+            QMessageBox.critical(self,'wrong','用户名已存在')
+            self.user_line.clear()
+        else:
+            if pwd_1 == pwd_2:
+                self.sql.signIn(id,pwd_2,self.type)
+                QMessageBox.information(self,'info','注册成功')
+                self.close()
+            else:
+                QMessageBox.critical(self,'wrong','两次密码输入不一致')
+                self.pwd_line.clear()
+                self.pwd2_line.clear()
 
     # 判断鼠标左键是否被按下，如果按下则将flag设为True并获取当前的位置
     def mousePressEvent(self, event):
@@ -82,4 +131,5 @@ class signIn(QWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     ui = signIn()
+    ui.show()
     sys.exit(app.exec_())

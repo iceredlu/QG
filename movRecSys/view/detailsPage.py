@@ -2,12 +2,14 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from sql import ConnetSQL
+from comments import movComment
 
 class movDetails(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
         self.sql = ConnetSQL()
+        self.getComment = movComment()
 
     #初始化界面
     def initUI(self):
@@ -38,14 +40,25 @@ class movDetails(QWidget):
         self.timelongLabel = QLabel('片长：/',self)
         self.introLabel = QLabel('简介：/',self)
         self.markLine = QLineEdit(self)
-        self.markLine.setPlaceholderText('输入评分(0-10)')
+        self.markLine.setPlaceholderText('输入评分(0-5)')
         self.markButton = QPushButton('√',self)
         self.closeButton = QPushButton('<',self)
+        self.commentButton = QPushButton('短评',self)
 
     #完善控件功能
     def initConsum(self):
         self.closeButton.clicked.connect(self.closePage)
         self.markButton.clicked.connect(self.markMov)
+        self.commentButton.clicked.connect(self.showComment)
+
+        self.markLine.textChanged.connect(self.check_input)
+        self.markButton.setEnabled(False)
+
+    def check_input(self):
+        if self.markLine.text():
+            self.markButton.setEnabled(False)
+        else:
+            self.markButton.setEnabled(True)
 
     #布局
     def initLayout(self):
@@ -65,6 +78,7 @@ class movDetails(QWidget):
         self.markLine.setGeometry(265,390,125,25)
         self.markButton.setGeometry(395,390,50,25)
         self.closeButton.setGeometry(20,20,50,25)
+        self.commentButton.setGeometry(450,390,50,25)
 
     #设置标签字体
     def initLabel(self):
@@ -88,6 +102,7 @@ class movDetails(QWidget):
     #改变标签内容
     def resetLabe(self,id):
         movDet = self.sql.movID_get_details(id) #获取电影详细信息
+        id = int(id)
         poster = './poster/' + str(id) + '.jpg'
         self.posterLabel.setPixmap(QPixmap(poster))
         title = movDet['moviename']
@@ -112,10 +127,19 @@ class movDetails(QWidget):
         self.introLabel.setText("<font color=%s>%s</font>" % ('#00897B',intro))
 
     #显示详细页面
-    def showDet(self,id):
+    def showDet(self,id,flag):
+        self.id = id
         self.resetLabe(id)
         self.show()
         self.raise_()
+        if flag == 0:
+            self.markButton.setEnabled(False)
+        elif flag == 1:
+            self.markButton.setEnabled(True)
+
+    def showComment(self):
+        id = self.id
+        self.getComment.getComment(id)
 
     #关闭页面
     def closePage(self):
@@ -123,9 +147,13 @@ class movDetails(QWidget):
 
     #评分
     def markMov(self):
-        pass
+        if self.markLine.text() >=0 and self.markLine.text() <= 5:
+            QMessageBox.information(self,'info','评分成功')
+        else:
+            QMessageBox.critical(self,'wrong','请输入0-5')
+            self.markLine.clear()
 
-   #判断鼠标左键是否被按下，如果按下则将flag设为True并获取当前的位置
+    #判断鼠标左键是否被按下，如果按下则将flag设为True并获取当前的位置
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.m_flag = True

@@ -1,12 +1,10 @@
-import sys
 from PyQt5.QtSql import *
 from PyQt5.QtWidgets import QApplication, QWidget, QMessageBox
-
+import sys
 
 class ConnetSQL(QWidget):
     def __init__(self):
-        super(ConnetSQL,self).__init__()
-        self.db = None
+        super().__init__()
         self.db_connect()
 
     def db_connect(self):
@@ -95,11 +93,59 @@ class ConnetSQL(QWidget):
                 return True
         return False
 
+    #注册新用户
+    def signIn(self,id,pwd,type):
+        query = QSqlQuery()
+        query.exec_()
+        sql = "INSERT INTO users (id,password,type) VALUES (%s,%s,'%s')" % (id,pwd,type)
+        query.exec_(sql)
+        return True
 
-"""
+    #修改用户评分
+    def mark(self,userid,movid,mark):
+        pass
+
+    #修改密码
+    def changePwd(self,id,pwd):
+        query = QSqlQuery()
+        query.exec_()
+        sql = "UPDATE users SET password = '%s' WHERE id = '%s'" % (pwd,id)
+        query.exec_(sql)
+
+    #获取新用户所喜欢的类型
+    def getNewType(self,id):
+        id = str(id)
+        query = QSqlQuery()
+        query.exec_()
+        sql = "SELECT id,type FROM users"
+        query.exec_(sql)
+        while query.next():
+            if query.value(0) == id:
+                return query.value(1)
+
+    def col(self):
+        query = QSqlQuery()
+        query.exec_()
+
+    #获取电影评论
+    def getComment(self,id):
+        queue = QSqlQuery()
+        queue.exec_()
+        sql = "SELECT id,comment1,comment2,comment3,comment4,comment5,comment10,comment6,comment7,comment8,comment9 FROM comments"
+        queue.exec_(sql)
+        comments = []
+        while queue.next():
+            if queue.value(0) == id:
+                for i in range(10):
+                    comments.append(queue.value(i+1))
+                return comments
+        return comments
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     sql = ConnetSQL()
-    sql.show()
+    sql.getComment(3961)
     sys.exit(app.exec_())
-"""
+
+

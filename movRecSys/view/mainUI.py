@@ -1,11 +1,12 @@
 import sys
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from sql import ConnetSQL
 from detailsPage import movDetails
 from logInPage import logIn
-import time
+from signInPage import signIn
+from algorithm.recommed import recMov
+from modifyInfo import modifyInfo
 
 class mainUI(QTabWidget):
     def __init__(self):
@@ -14,6 +15,10 @@ class mainUI(QTabWidget):
         self.sql = ConnetSQL()
         self.detail = movDetails()
         self.log = logIn()
+        self.sign = signIn()
+        self.cf = recMov()
+        self.modify = modifyInfo()
+
         self.initUI()
 
     #初始化
@@ -129,6 +134,12 @@ class mainUI(QTabWidget):
         self.setMovLabelVar()#重新获取电影信息
         self.resetLabel()
 
+    #获取电影信息，设置标签的值
+    def setMovLabelVar(self):
+        self.match_mov()#获取匹配的电影id，再根据电影id获取详细信息放在列表
+        self.curMov = 0
+        self.evalue() #设置标签变量列表
+
     #重置标签内容
     def resetLabel(self):
         #海报
@@ -185,13 +196,6 @@ class mainUI(QTabWidget):
             self.detBt_6.setVisible(False)
         else:
             self.detBt_6.setVisible(True)
-
-    #设置标签的值
-    def setMovLabelVar(self):
-        self.match_mov()#获取匹配的电影id，再根据电影id获取详细信息放在列表中
-        self.curMov = 0
-
-        self.evalue()
 
     #改变列表值
     def evalue(self):
@@ -348,12 +352,12 @@ class mainUI(QTabWidget):
         self.last_page.clicked.connect(self.lastPage)
 
         #详情
-        self.detBt_1.clicked.connect(lambda:self.showDet(self.get_movID[self.curMov-6]))
-        self.detBt_2.clicked.connect(lambda: self.showDet(self.get_movID[self.curMov - 5]))
-        self.detBt_3.clicked.connect(lambda: self.showDet(self.get_movID[self.curMov - 4]))
-        self.detBt_4.clicked.connect(lambda: self.showDet(self.get_movID[self.curMov - 3]))
-        self.detBt_5.clicked.connect(lambda: self.showDet(self.get_movID[self.curMov - 2]))
-        self.detBt_6.clicked.connect(lambda: self.showDet(self.get_movID[self.curMov - 1]))
+        self.detBt_1.clicked.connect(lambda:self.showDet(self.get_movID[self.curMov-6],0))
+        self.detBt_2.clicked.connect(lambda: self.showDet(self.get_movID[self.curMov - 5],0))
+        self.detBt_3.clicked.connect(lambda: self.showDet(self.get_movID[self.curMov - 4],0))
+        self.detBt_4.clicked.connect(lambda: self.showDet(self.get_movID[self.curMov - 3],0))
+        self.detBt_5.clicked.connect(lambda: self.showDet(self.get_movID[self.curMov - 2],0))
+        self.detBt_6.clicked.connect(lambda: self.showDet(self.get_movID[self.curMov - 1],0))
 
     #重新获取类型
     def match_gen(self,i):
@@ -405,8 +409,8 @@ class mainUI(QTabWidget):
             self.next_page.setEnabled(False)
 
     #显示详细页面
-    def showDet(self,id):
-        self.detail.showDet(id)
+    def showDet(self,movid,flag):
+        self.detail.showDet(movid,flag)
 
     #将获得的电影ID列表按评分排序
     def sortMov(self):
@@ -433,6 +437,11 @@ class mainUI(QTabWidget):
         self.lineLabel = QLabel() #分割线
         self.logIn_button = QPushButton('登录')
         self.signIn_button = QPushButton('注册')
+        self.userLine = QLineEdit()
+        self.pwdLine = QLineEdit()
+        self.pwdLine.setEchoMode(QLineEdit.Password)
+        self.userLine.setPlaceholderText('输入账号')
+        self.pwdLine.setPlaceholderText('输入密码')
 
         #电影海报和点击查看详情按钮
         self.poster_1 = QLabel()
@@ -452,24 +461,24 @@ class mainUI(QTabWidget):
 
     #初始化个人主页布局
     def homepageLayout(self):
-        #为你推荐 分割线 登陆注册按钮的位置
-        #海报和其他按钮的位置，并且设置：不显示（写两个方法 一个显示各种登陆后的控件并隐藏登陆前的某些控件，一个隐藏退出登陆后的按键
-        #设置为你推荐 分割线字体大小和颜色
         fontTitle = QFont()
         fontTitle.setBold(True)#加粗
         fontTitle.setPointSize(30)#字体大小
         self.TitleLabel.setFont(fontTitle) #大标签的字体
         self.TitleLabel.setText("<font color=%s>%s</font>" % ('#005500','为你推荐'))
-        self.lineLabel.setText("<font color=%s>%s</font>" % ('#005500','-----------------------------------------------------------------------------------------------------'))
+        self.lineLabel.setText("<font color=%s>%s</font>" % ('#005500','--------------------------------------------------------------------------------------------------------------'))
 
         self.title_hbox = QHBoxLayout()
         self.title_hbox.addStretch(1)
         self.title_hbox.addWidget(self.TitleLabel)
         self.title_hbox.addStretch(3)
-        self.title_hbox.addWidget(self.logIn_button)
-        self.title_hbox.addWidget(self.signIn_button)
         self.title_hbox.addWidget(self.modify_bt)
         self.title_hbox.addWidget(self.signOut_bt)
+        self.title_hbox.addWidget(self.userLine)
+        self.title_hbox.addWidget(self.pwdLine)
+        self.title_hbox.addWidget(self.logIn_button)
+        self.title_hbox.addWidget(self.signIn_button)
+
 
         #分别存放三部电影的信息
         self.hp_mov_vbox_1 = QVBoxLayout()
@@ -523,10 +532,64 @@ class mainUI(QTabWidget):
     #完善个人主页控件功能
     def homepageConsum(self):
         self.logIn_button.clicked.connect(self.toLog)
+        self.signIn_button.clicked.connect(self.signIn)
+        self.det_bt_1.clicked.connect(lambda:self.showDet(self.user_rec_movid[self.curRec - 3],1))
+        self.det_bt_2.clicked.connect(lambda: self.showDet(self.user_rec_movid[self.curRec - 2],1))
+        self.det_bt_3.clicked.connect(lambda: self.showDet(self.user_rec_movid[self.curRec - 1],1))
+
+        self.last_bt.clicked.connect(self.last_recPage)
+        self.next_bt.clicked.connect(self.next_recPage)
+
+        self.modify_bt.clicked.connect(self.showModify)
+        self.signOut_bt.clicked.connect(self.signOut)
+
+        #检查输入
+        self.userLine.textChanged.connect(self.check_input)
+        self.pwdLine.textChanged.connect(self.check_input)
+
+    #检查输入
+    def check_input(self):
+        if self.userLine.text() and self.pwdLine.text():
+            self.logIn_button.setEnabled(True)
+        else:
+            self.logIn_button.setEnabled(False)
 
     #登录
     def toLog(self):
-        self.log.show()
+        userid = self.userLine.text()
+        pwd = self.pwdLine.text()
+        if self.sql.match_userID(userid,pwd):
+            self.user_id = userid
+            userid = int(userid)
+            if userid <= 200 and userid >= 1:
+                self.recmov(userid)
+            else:
+                self.recToNew()
+        else:
+            QMessageBox.critical(self,'wrong','用户名或密码错误')
+        self.userLine.clear()
+        self.pwdLine.clear()
+
+    def recToNew(self):
+        type = self.sql.getNewType(self.user_id)
+        self.setLabelTrue()
+        rec = self.sql.genresSearch(type)
+        self.user_rec_movid = self.sortRecMov(rec)
+        self.recmovNum = 21
+        self.curRec = 0
+        self.evalueRecList()
+        self.resetHPmov()
+
+    #按评分排序，获取前21部电影
+    def sortRecMov(self,rec):
+        mov = {}
+        for i in range(len(rec)):
+            mov[rec[i]] = self.sql.getScore(rec[i])
+        mov = sorted(mov,key=mov.__getitem__,reverse=True)
+        return mov[:21]
+
+    def signIn(self):
+        self.sign.show()
 
     #将登录前标签设置不显示
     def setLabelFalse(self):
@@ -540,14 +603,91 @@ class mainUI(QTabWidget):
         self.signOut_bt.setVisible(False)
         self.last_bt.setVisible(False)
         self.next_bt.setVisible(False)
+        self.logIn_button.setVisible(True)
+        self.signIn_button.setVisible(True)
+        self.userLine.setVisible(True)
+        self.pwdLine.setVisible(True)
+        #初始登录按钮不可用，通过文本框变化判断
+        self.logIn_button.setEnabled(False)
 
-    #登录成功后login类调用此函数以显示推荐电影
-    def recmov(self):
-        print('ok')
+    #登录后显示电影信息标签
+    def setLabelTrue(self):
+        self.poster_1.setVisible(True)
+        self.poster_2.setVisible(True)
+        self.poster_3.setVisible(True)
+        self.det_bt_1.setVisible(True)
+        self.det_bt_2.setVisible(True)
+        self.det_bt_3.setVisible(True)
+        self.last_bt.setVisible(True)
+        self.next_bt.setVisible(True)
+        self.modify_bt.setVisible(True)
+        self.signOut_bt.setVisible(True)
+        self.logIn_button.setVisible(False)
+        self.signIn_button.setVisible(False)
+        self.last_bt.setEnabled(False)
+        self.userLine.setVisible(False)
+        self.pwdLine.setVisible(False)
+
+    #登录成功后login类调用该函数以显示推荐电影
+    def recmov(self,userid):
+        # 根据userid，获取推荐电影列表
+        self.setLabelTrue() # 显示信息标签，隐藏登录注册按钮
+        rec = self.cf.recmov(userid)
+        self.user_rec_movid = []
+        for i in range(len(rec)):
+            self.user_rec_movid.append(rec[i][0])
+        self.recmovNum = len(self.user_rec_movid) # 为用户推荐的电影数量
+        self.curRec = 0  # 当前推荐列表索引
+        #重置标签列表，并更换标签的值
+        self.evalueRecList()
+        self.resetHPmov()
+
+    #推荐电影后重置标签内容
+    def resetHPmov(self):
+        self.poster_1.setPixmap(QPixmap(self.rec_poster[0]))
+        self.poster_2.setPixmap(QPixmap(self.rec_poster[1]))
+        self.poster_3.setPixmap(QPixmap(self.rec_poster[2]))
+
+    #重置标签内容
+    def evalueRecList(self):
+        self.rec_poster = [] #存放海报标签，初始化变量
+        for i in range(3):
+            if self.curRec >= self.recmovNum:
+                self.rec_poster.append('')
+            else:
+                n = self.user_rec_movid[self.curRec]
+                n = int(n)
+                poster = './poster/' + str(n) + '.jpg'
+                self.rec_poster.append(poster)
+            self.curRec += 1
+
+    #上一页
+    def last_recPage(self):
+        self.curRec -= 6
+        self.evalueRecList()
+        self.resetHPmov()
+        self.next_bt.setEnabled(True)
+        if self.curRec < 6:
+            self.last_bt.setEnabled(False)
+
+    #下一页
+    def next_recPage(self):
+        self.evalueRecList()
+        self.resetHPmov()
+        self.last_bt.setEnabled(True) #点击下一页后设置上一页按钮可使用
+        if self.curRec > 18:
+            self.next_bt.setEnabled(False)
+
+    def showModify(self):
+        self.modify.modify(self.user_id)
+
+    def signOut(self):
+        self.setLabelFalse()
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     ui = mainUI()
     ui.show()
+    #ui.recmov(11)
     sys.exit(app.exec_())
